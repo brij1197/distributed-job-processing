@@ -28,7 +28,7 @@ async function setStatus(
 
 // Job Handlers
 async function handleScrape(
-  jobId: string,
+  _jobId: string,
   payload: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
   const url = payload["url"] as string;
@@ -44,7 +44,7 @@ async function handleScrape(
 }
 
 async function handleResize(
-  jobId: string,
+  _jobId: string,
   payload: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
   const sharp = require("sharp");
@@ -55,19 +55,18 @@ async function handleResize(
 }
 
 async function handleConvert(
-  jobId: string,
+  _jobId: string,
   payload: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
   const { execFile } = await import("child_process");
   const { promisify } = await import("util");
-  const { dirname, basename, extname } = await import("path");
-  const execFileAsync = promisify(execFile);
+  const { dirname, extname } = await import("path");
 
   const inputPath = payload["input_path"] as string;
   const format = (payload["format"] as string) || "pdf";
   const outDir = dirname(inputPath);
 
-  await execFileAsync(
+  await promisify(execFile)(
     "libreoffice",
     ["--headless", "--convert-to", format, "--outDir", outDir, inputPath],
     { timeout: 120_000 },
@@ -78,17 +77,16 @@ async function handleConvert(
 }
 
 async function handleScript(
-  jobId: string,
+  _jobId: string,
   payload: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
   const { execFile } = await import("child_process");
   const { promisify } = await import("util");
-  const execFileAsync = promisify(execFile);
 
   const command = payload["command"] as string[];
   const timeout = ((payload["timeout"] as number) || 30) * 1000;
 
-  const { stdout, stderr } = await execFileAsync(command[0], command.slice(1), {
+  const { stdout, stderr } = await promisify(execFile)(command[0], command.slice(1), {
     timeout,
   });
   return {
@@ -130,6 +128,7 @@ const worker = new Worker(
 
     const result = await handler(jobId, payload);
     await setStatus(jobId, "success", { result });
+    return result;
   },
   { connection },
 );
