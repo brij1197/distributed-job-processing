@@ -1,0 +1,113 @@
+version: "3.9"
+
+services:
+  #Shared Infrastructure
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 5
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: jobuser
+      POSTGRES_PASSWORD: jobpassword
+      POSTGRES_DB: jobsdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobuser -d jobsdb"]
+      interval: 5s
+      retries: 5
+
+  #Python Stack (FastAPI and Celery)
+  api-python:
+    build: ./backend-python
+    ports: 
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://jobuser:jobpassword@postgres:5432/jobsdb
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    volumes:
+      - ./backend-python:/app
+      - uploads_data:/uploads
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  worker-python:
+    build: ./backend-python
+    environment:
+      DATABASE_URL: postgresql://jobuser:jobpassword@postgres:5432/jobsdb
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    volumes:
+      - ./backend-python:/app
+      - uploads_data:/uploads
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=4
+
+  flower:
+    build: ./backend-python
+    ports:
+      - "5555:5555"
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+    depends_on:
+      - redis
+    command: celery -A app.celery_app flower --port=5555
+
+  #Frontend (Next.js)
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_PYTHON_API: http://localhost:8000
+      NEXT_PUBLIC_NODE_API: http://localhost:3001
+    depends_on:
+      - api-python
+      - api-node
+
+  #Node Stack (Express and BullMQ)
+  api-node:
+    build: ./backend-node
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgres://jobuser:jobpassword@postgres:5432/jobsdb
+      REDIS_URL: redis://redis:6379
+      PORT: 3001
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    volumes:
+      - ./backend-node/src:/app/src
+      - uploads_data:/uploads
+
+  worker-node:
+    build: ./backend-node
+    environment:
+      DATABASE_URL: postgres://jobuser:jobpassword@postgres:5432/jobsdb
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    volumes:
+      - uploads_data:/uploads
+    command: node dist/worker.js
+
+volumes:
+  redis_data:
+  postgres_data:
+  uploads_data:
