@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { submitJob, type JobType } from "@/lib/api";
+import { submitJob, uploadFile, type JobType } from "@/lib/api";
+
+const FILE_TYPES: JobType[] = ["resize", "convert"];
 
 const EXAMPLE_PAYLOADS: Record<JobType, Record<string, unknown>> = {
   scrape: { url: "https://example.com" },
-  resize: { path: "/uploads/image.jpg", width: 800, height: 600 },
-  convert: { input_path: "/uploads/doc.docx", format: "pdf" },
+  resize: { path: "", width: 800, height: 600 },
+  convert: { input_path: "", format: "pdf" },
   script: { command: ["echo", "hello world"], timeout: 30 },
 };
 
@@ -20,10 +22,33 @@ export default function SubmitPage() {
   const [maxRetries, setMaxRetries] = useState(3);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadedPath, setUploadedPath] = useState("");
 
   function handleTypeChange(newType: JobType) {
     setType(newType);
+    setUploadedPath("");
     setPayload(JSON.stringify(EXAMPLE_PAYLOADS[newType], null, 2));
+  }
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    try {
+      const { path } = await uploadFile(file);
+      setUploadedPath(path);
+      const base = EXAMPLE_PAYLOADS[type];
+      const updated = type === "resize"
+        ? { ...base, path }
+        : { ...base, input_path: path };
+      setPayload(JSON.stringify(updated, null, 2));
+    } catch {
+      setError("File upload failed");
+    } finally {
+      setUploading(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -67,6 +92,21 @@ export default function SubmitPage() {
             )}
           </div>
         </div>
+
+        {FILE_TYPES.includes(type) && (
+          <div>
+            <label className="block text-sm text-gray-400 mb-2">Upload File</label>
+            <input
+              type="file"
+              onChange={handleFileChange}
+              disabled={uploading}
+              className="w-full text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-gray-700 file:text-white hover:file:bg-gray-600"
+            />
+            {uploading && <p className="text-xs text-gray-500 mt-1">Uploading...</p>}
+            {uploadedPath && <p className="text-xs text-green-400 mt-1">Uploaded: {uploadedPath}</p>}
+          </div>
+        )}
+
         <div>
           <label className="block text-sm text-gray-400 mb-2">
             Payload (JSON)
@@ -94,7 +134,7 @@ export default function SubmitPage() {
         {error && <p className="text-red-400 text-sm">{error}</p>}
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || uploading}
           className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 diabled:text-gray-500 text-white font-medium py-2.5 rounded-lg transition-colors"
         >
           {submitting ? "Submitting..." : "Submit Job"}

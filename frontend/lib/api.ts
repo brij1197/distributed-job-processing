@@ -40,7 +40,7 @@ export async function listJobs(
   if (status) {
     params.set("status", status);
   }
-  const res = await fetch(`${PYTHON_API}/jobs/${params}`, {
+  const res = await fetch(`${PYTHON_API}/jobs?${params}`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error("Failed to fetch jobs.");
@@ -53,12 +53,20 @@ export async function getJob(id: string): Promise<Job> {
   return res.json();
 }
 
+export async function uploadFile(file: File): Promise<{ path: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${PYTHON_API}/jobs/upload`, { method: "POST", body: form });
+  if (!res.ok) throw new Error("Failed to upload file.");
+  return res.json();
+}
+
 export async function submitJob(
   type: JobType,
   payload: Record<string, unknown>,
   max_retries = 3,
 ): Promise<Job> {
-  const res = await fetch(`${PYTHON_API}/jobs/`, {
+  const res = await fetch(`${PYTHON_API}/jobs`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
