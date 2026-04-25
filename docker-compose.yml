@@ -41,6 +41,7 @@ services:
       redis: { condition: service_healthy }
     volumes:
       - ./backend-python:/app
+      - uploads_data:/uploads
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   worker-python:
@@ -53,6 +54,7 @@ services:
       redis: { condition: service_healthy }
     volumes:
       - ./backend-python:/app
+      - uploads_data:/uploads
     command: celery -A app.celery_app worker --loglevel=info --concurrency=4
 
   flower:
@@ -64,6 +66,18 @@ services:
     depends_on:
       - redis
     command: celery -A app.celery_app flower --port=5555
+
+  #Frontend (Next.js)
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_PYTHON_API: http://localhost:8000
+      NEXT_PUBLIC_NODE_API: http://localhost:3001
+    depends_on:
+      - api-python
+      - api-node
 
   #Node Stack (Express and BullMQ)
   api-node:
@@ -79,6 +93,7 @@ services:
       redis: { condition: service_healthy }
     volumes:
       - ./backend-node/src:/app/src
+      - uploads_data:/uploads
 
   worker-node:
     build: ./backend-node
@@ -88,8 +103,11 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
+    volumes:
+      - uploads_data:/uploads
     command: node dist/worker.js
 
 volumes:
   redis_data:
   postgres_data:
+  uploads_data:
