@@ -1,12 +1,26 @@
 import uuid
-from fastapi import APIRouter, HTTPException, Query, Depends
+import os
+import shutil
+from fastapi import APIRouter, HTTPException, Query, Depends, UploadFile, File
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Job
 from app.schemas import JobCreate, JobResponse, JobListResponse
 from app.tasks import dispatch
 
+UPLOAD_DIR = "/uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 router = APIRouter()
+
+# POST /upload
+@router.post("/upload")
+def upload_file(file: UploadFile = File(...)):
+    dest = os.path.join(UPLOAD_DIR, file.filename)
+    with open(dest, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    return JSONResponse({"path": dest})
 
 # POST /jobs
 @router.post("/", response_model=JobResponse, status_code=201)
