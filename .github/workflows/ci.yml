@@ -1,0 +1,51 @@
+name: CI
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+
+jobs:
+    python:
+        name: Python backend (build)
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: backend-python
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-python@v5
+              with:
+                  python-version: "3.12"
+                  cache: pip
+                  cache-dependency-path: backend-python/requirements.txt
+
+            - name: Install dependencies
+              run: pip install -r requirements.txt
+
+            - name: Import check
+              run: |
+                  python -c "import app.tasks, app.celery_app, app.schemas, app.models; print('python backend imports OK')"
+
+    node:
+        name: Node backend (build)
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: backend-node
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: npm
+                  cache-dependency-path: backend-node/package-lock.json
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Build (tsc)
+              run: npm run build
