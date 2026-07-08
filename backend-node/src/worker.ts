@@ -43,40 +43,9 @@ async function handleScrape(
   };
 }
 
-async function handleResize(
-  _jobId: string,
-  payload: Record<string, unknown>,
-): Promise<Record<string, unknown>> {
-  const sharp = require("sharp");
-  const { path, width = 800, height = 600 } = payload;
-  const outPath = `${path}-resized.png`;
-  await sharp(path).resize(width, height).toFile(outPath);
-  return { outPath };
-}
-
-async function handleConvert(
-  _jobId: string,
-  payload: Record<string, unknown>,
-): Promise<Record<string, unknown>> {
-  const { execFile } = await import("child_process");
-  const { promisify } = await import("util");
-  const { dirname, extname } = await import("path");
-
-  const inputPath = payload["input_path"] as string;
-  const format = (payload["format"] as string) || "pdf";
-  const outDir = dirname(inputPath);
-
-  await promisify(execFile)(
-    "libreoffice",
-    ["--headless", "--convert-to", format, "--outdir", outDir, inputPath],
-    { timeout: 120_000 },
-  );
-
-  const outPath = inputPath.replace(extname(inputPath), `.${format}`);
-  return { input: inputPath, output: outPath, format };
-}
-
 // Handler map
+// NOTE: The Node backend is intentionally scoped to `scrape` only. It exists to
+// demonstrate the same BullMQ + Postgres queue architecture on a second stack
 const handlers: Record<
   JobType,
   (
@@ -85,8 +54,6 @@ const handlers: Record<
   ) => Promise<Record<string, unknown>>
 > = {
   scrape: handleScrape,
-  resize: handleResize,
-  convert: handleConvert,
 };
 
 // BullMQ Worker
