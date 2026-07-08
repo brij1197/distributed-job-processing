@@ -76,26 +76,6 @@ async function handleConvert(
   return { input: inputPath, output: outPath, format };
 }
 
-async function handleScript(
-  _jobId: string,
-  payload: Record<string, unknown>,
-): Promise<Record<string, unknown>> {
-  const { execFile } = await import("child_process");
-  const { promisify } = await import("util");
-
-  const command = payload["command"] as string[];
-  const timeout = ((payload["timeout"] as number) || 30) * 1000;
-
-  const { stdout, stderr } = await promisify(execFile)(command[0], command.slice(1), {
-    timeout,
-  });
-  return {
-    returncode: 0,
-    stdout: stdout.slice(-4000),
-    stderr: stderr.slice(-1000),
-  };
-}
-
 // Handler map
 const handlers: Record<
   JobType,
@@ -107,7 +87,6 @@ const handlers: Record<
   scrape: handleScrape,
   resize: handleResize,
   convert: handleConvert,
-  script: handleScript,
 };
 
 // BullMQ Worker

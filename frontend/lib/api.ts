@@ -6,7 +6,7 @@ export type JobStatus =
   | "success"
   | "failed"
   | "retrying";
-export type JobType = "scrape" | "resize" | "convert" | "script";
+export type JobType = "scrape" | "resize" | "convert";
 
 export interface Job {
   id: string;
