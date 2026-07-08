@@ -67,7 +67,9 @@ const worker = new Worker(
 
     const type = job.name as JobType;
 
-    await setStatus(jobId, "running");
+    // Record which stack executed this job, set on the running transition
+    // so it reflects the worker that picked it up.
+    await setStatus(jobId, "running", { worker_stack: "bullmq" });
 
     const handler = handlers[type];
     if (!handler) throw new Error(`Unknown job type: ${type}`);

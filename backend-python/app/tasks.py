@@ -23,6 +23,8 @@ def _set_status(job_id: str, status: str, **kwargs):
         now = datetime.now(timezone.utc)
         if status == "running":
             job.start_at = now
+            # Record which stack actually executed this job.
+            job.worker_stack = "celery"
         elif status in ["success", "failed"]:
             job.finished_at = now
         for key, value in kwargs.items():
