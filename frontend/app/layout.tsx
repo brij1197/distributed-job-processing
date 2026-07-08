@@ -19,13 +19,13 @@ export default function RootLayout({
           <div className="flex gap-4 text-sm">
             <a
               href="/"
-              className="text-grey-400 hover:text-white transition-colors"
+              className="text-gray-400 hover:text-white transition-colors"
             >
               Dashboard
             </a>
             <a
               href="/submit"
-              className="text-grey-400 hover:text-white transition-colors"
+              className="text-gray-400 hover:text-white transition-colors"
             >
               Submit Job
             </a>
