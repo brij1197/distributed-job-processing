@@ -39,9 +39,8 @@ export default function SubmitPage() {
       const { path } = await uploadFile(file);
       setUploadedPath(path);
       const base = EXAMPLE_PAYLOADS[type];
-      const updated = type === "resize"
-        ? { ...base, path }
-        : { ...base, input_path: path };
+      const updated =
+        type === "resize" ? { ...base, path } : { ...base, input_path: path };
       setPayload(JSON.stringify(updated, null, 2));
     } catch {
       setError("File upload failed");
@@ -77,32 +76,38 @@ export default function SubmitPage() {
         <div>
           <label className="block text-sm text-gray-400 mb-2">Job Type</label>
           <div className="grid grid-cols-3 gap-2">
-            {(["scrape", "resize", "convert"] as JobType[]).map(
-              (t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => handleTypeChange(t)}
-                  className={`py-2 rounded-lg text-sm capitalize font-medium transition-colors ${type === t ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-400 hover:text-white"} `}
-                >
-                  {t}
-                </button>
-              ),
-            )}
+            {(["scrape", "resize", "convert"] as JobType[]).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => handleTypeChange(t)}
+                className={`py-2 rounded-lg text-sm capitalize font-medium transition-colors ${type === t ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-400 hover:text-white"} `}
+              >
+                {t}
+              </button>
+            ))}
           </div>
         </div>
 
         {FILE_TYPES.includes(type) && (
           <div>
-            <label className="block text-sm text-gray-400 mb-2">Upload File</label>
+            <label className="block text-sm text-gray-400 mb-2">
+              Upload File
+            </label>
             <input
               type="file"
               onChange={handleFileChange}
               disabled={uploading}
               className="w-full text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-gray-700 file:text-white hover:file:bg-gray-600"
             />
-            {uploading && <p className="text-xs text-gray-500 mt-1">Uploading...</p>}
-            {uploadedPath && <p className="text-xs text-green-400 mt-1">Uploaded: {uploadedPath}</p>}
+            {uploading && (
+              <p className="text-xs text-gray-500 mt-1">Uploading...</p>
+            )}
+            {uploadedPath && (
+              <p className="text-xs text-green-400 mt-1">
+                Uploaded: {uploadedPath}
+              </p>
+            )}
           </div>
         )}
 

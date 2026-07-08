@@ -112,7 +112,9 @@ export default function JobDetailPage() {
             {JSON.stringify(job.result, null, 2)}
           </pre>
           {(() => {
-            const outPath = (job.result.output_path ?? job.result.output) as string | undefined;
+            const outPath = (job.result.output_path ?? job.result.output) as
+              | string
+              | undefined;
             return outPath ? (
               <a
                 href={`${process.env.NEXT_PUBLIC_PYTHON_API}/uploads/${outPath.split("/").pop()}`}

@@ -56,7 +56,10 @@ export async function getJob(id: string): Promise<Job> {
 export async function uploadFile(file: File): Promise<{ path: string }> {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${PYTHON_API}/jobs/upload`, { method: "POST", body: form });
+  const res = await fetch(`${PYTHON_API}/jobs/upload`, {
+    method: "POST",
+    body: form,
+  });
   if (!res.ok) throw new Error("Failed to upload file.");
   return res.json();
 }

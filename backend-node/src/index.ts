@@ -20,7 +20,10 @@ app.get("/health", (_req, res) => res.json({ status: "ok" }));
 app.use("/jobs", jobsRouter);
 
 app.post("/jobs/upload", upload.single("file"), (req, res) => {
-  if (!req.file) { res.status(400).json({ error: "No file provided" }); return; }
+  if (!req.file) {
+    res.status(400).json({ error: "No file provided" });
+    return;
+  }
   const dest = path.join(UPLOAD_DIR, req.file.originalname);
   fs.renameSync(req.file.path, dest);
   res.json({ path: dest });
