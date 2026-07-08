@@ -14,6 +14,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 router = APIRouter()
 
+
 # POST /upload
 @router.post("/upload")
 def upload_file(file: UploadFile = File(...)):
@@ -21,6 +22,7 @@ def upload_file(file: UploadFile = File(...)):
     with open(dest, "wb") as f:
         shutil.copyfileobj(file.file, f)
     return JSONResponse({"path": dest})
+
 
 # POST /jobs
 @router.post("/", response_model=JobResponse, status_code=201)
@@ -35,10 +37,22 @@ def submit_job(body: JobCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(job)
 
-    #Send to Celery
-    dispatch(str(job.id), job.type, job.payload)
+    # Enqueue the job. If the broker is unreachable, don't leave the row
+    # stranded as "pending" - mark it failed so its state is honest.
+    try:
+        dispatch(str(job.id), job.type, job.payload)
+    except Exception as exc:
+        job.status = "failed"
+        job.error = f"dispatch_failed: {exc}"
+        db.commit()
+        db.refresh(job)
+        raise HTTPException(
+            status_code=503,
+            detail="Job accepted but could not be queued; marked failed.",
+        )
 
     return job
+
 
 # GET /jobs
 @router.get("/", response_model=JobListResponse)
@@ -54,8 +68,9 @@ def list_jobs(
 
     total = query.count()
     jobs = query.order_by(Job.created_at.desc()).offset(offset).limit(limit).all()
-    
+
     return {"jobs": jobs, "total": total}
+
 
 # GET /jobs/{id}
 @router.get("/{job_id}", response_model=JobResponse)
@@ -64,6 +79,7 @@ def get_job(job_id: uuid.UUID, db: Session = Depends(get_db)):
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return job
+
 
 # DELETE /jobs/{id}
 @router.delete("/{job_id}", status_code=204)

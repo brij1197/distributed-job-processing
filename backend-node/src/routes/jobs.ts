@@ -27,7 +27,22 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     [id, type, JSON.stringify(payload), max_retries],
   );
 
-  await dispatch(id, type, payload, max_retries);
+  // Enqueue the job. If the broker is unreachable, don't leave the row
+  // stranded as "pending" - mark it failed so its state is honest.
+  try {
+    await dispatch(id, type, payload, max_retries);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    await query(`UPDATE jobs SET status = 'failed', error = $2 WHERE id = $1`, [
+      id,
+      `dispatch_failed: ${message}`,
+    ]);
+    res
+      .status(503)
+      .json({ error: "Job accepted but could not be queued; marked failed." });
+    return;
+  }
+
   const [job] = await query(`SELECT * FROM jobs WHERE id = $1`, [id]);
   res.status(201).json(job);
 });
