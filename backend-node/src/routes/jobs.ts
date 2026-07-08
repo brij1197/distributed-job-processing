@@ -20,6 +20,14 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     res.status(400).json({ error: "type is required" });
     return;
   }
+  // Node backend is scrape-only; reject other types explicitly rather than
+  // inserting a row no handler can process
+  if (type !== "scrape") {
+    res.status(400).json({
+      error: `Unsupported job type '${type}' on the Node backend. Only 'scrape' is supported here; use the Python backend for resize/convert.`,
+    });
+    return;
+  }
 
   const id = uuidv4();
   await query(

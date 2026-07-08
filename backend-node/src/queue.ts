@@ -10,7 +10,7 @@ export const connection = {
 
 export const jobQueue = new Queue("jobs", { connection });
 
-export type JobType = "scrape" | "resize" | "convert";
+export type JobType = "scrape";
 
 export async function dispatch(
   jobId: string,
