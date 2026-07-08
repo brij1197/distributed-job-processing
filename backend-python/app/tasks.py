@@ -145,44 +145,11 @@ def convert_job(self, job_id: str, payload: dict):
         raise self.retry(exc=exc)
 
 
-# Run a custom script
-@celery_app.task(bind=True, base=JobTask, max_retries=2, default_retry_delay=5)
-def script_job(self, job_id: str, payload: dict):
-    _set_status(job_id, "running")
-    try:
-        command = payload["command"]
-        timeout = int(payload.get("timeout", 30))
-
-        proc = subprocess.run(
-            command,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-        result = {
-            "returncode": proc.returncode,
-            "stdout": proc.stdout[-4000:],
-            "stderr": proc.stderr[-1000:],
-        }
-        if proc.returncode != 0:
-            raise Exception(f"Script exited with code {proc.returncode}")
-
-        _set_status(job_id, "success", result=result)
-        return result
-    except subprocess.TimeoutExpired as exc:
-        logger.warning(f"Script_job {job_id} timed out: {exc}, retrying...")
-        raise self.retry(exc=exc)
-    except Exception as exc:
-        logger.warning(f"Script_job {job_id} failed: {exc}, retrying...")
-        raise self.retry(exc=exc)
-
-
 # Dispatch jobs to the correct task based on type
 TASK_MAP = {
     "scrape": scrape_job,
     "resize": resize_job,
     "convert": convert_job,
-    "script": script_job,
 }
 
 

@@ -4,7 +4,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict
 
 # Job Type and status literals
-JobType = Literal["scrape", "resize", "convert", "script"]
+JobType = Literal["scrape", "resize", "convert"]
 JobStatus = Literal["pending", "running", "success", "failed", "retrying"]
 
 

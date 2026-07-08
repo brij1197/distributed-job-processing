@@ -10,7 +10,6 @@ const EXAMPLE_PAYLOADS: Record<JobType, Record<string, unknown>> = {
   scrape: { url: "https://example.com" },
   resize: { path: "", width: 800, height: 600 },
   convert: { input_path: "", format: "pdf" },
-  script: { command: ["echo", "hello world"], timeout: 30 },
 };
 
 export default function SubmitPage() {
@@ -77,8 +76,8 @@ export default function SubmitPage() {
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label className="block text-sm text-gray-400 mb-2">Job Type</label>
-          <div className="grid grid-cols-4 gap-2">
-            {(["scrape", "resize", "convert", "script"] as JobType[]).map(
+          <div className="grid grid-cols-3 gap-2">
+            {(["scrape", "resize", "convert"] as JobType[]).map(
               (t) => (
                 <button
                   key={t}
