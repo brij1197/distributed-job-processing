@@ -27,6 +27,7 @@ class JobResponse(BaseModel):
     error: str | None = None
     retries: int
     max_retries: int
+    worker_stack: str | None = None
     created_at: datetime
     updated_at: datetime
     start_at: datetime | None = None

@@ -17,6 +17,7 @@ export interface Job {
   error: string | null;
   retries: number;
   max_retries: number;
+  worker_stack: "celery" | "bullmq" | null;
   created_at: string;
   updated_at: string;
   start_at: string | null;
