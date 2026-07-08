@@ -139,7 +139,7 @@ export default function SubmitPage() {
         <button
           type="submit"
           disabled={submitting || uploading}
-          className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 diabled:text-gray-500 text-white font-medium py-2.5 rounded-lg transition-colors"
+          className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-medium py-2.5 rounded-lg transition-colors"
         >
           {submitting ? "Submitting..." : "Submit Job"}
         </button>

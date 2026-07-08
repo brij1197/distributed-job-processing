@@ -77,7 +77,7 @@ export default function Dashboard() {
         ))}
       </div>
       {loading ? (
-        <p className="text-grey-500">Loading...</p>
+        <p className="text-gray-500">Loading...</p>
       ) : jobs.length === 0 ? (
         <p className="text-gray-500">No jobs found.</p>
       ) : (
@@ -96,7 +96,7 @@ export default function Dashboard() {
                 <span className="text-sm font-medium capitalize">
                   {job.type}
                 </span>
-                <span className="tex-cs text-gray-500 truncate hidden sm-block">
+                <span className="text-xs text-gray-500 truncate hidden sm:block">
                   {job.id}
                 </span>
               </div>
