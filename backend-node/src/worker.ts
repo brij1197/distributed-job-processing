@@ -68,7 +68,7 @@ async function handleConvert(
 
   await promisify(execFile)(
     "libreoffice",
-    ["--headless", "--convert-to", format, "--outDir", outDir, inputPath],
+    ["--headless", "--convert-to", format, "--outdir", outDir, inputPath],
     { timeout: 120_000 },
   );
 
