@@ -52,7 +52,7 @@ jobs:
               run: pytest tests/ -v
 
     node:
-        name: Node backend (build)
+        name: Node backend (test)
         runs-on: ubuntu-latest
         defaults:
             run:
@@ -71,3 +71,8 @@ jobs:
 
             - name: Build (tsc)
               run: npm run build
+
+            - name: Run tests
+              env:
+                  UPLOAD_DIR: /tmp/node-test-uploads
+              run: npm test
