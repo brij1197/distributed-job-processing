@@ -15,7 +15,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://reimagined-parakeet-vgvw566vq5xhp4xw-3000.app.github.dev"],
+    allow_origins=[os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000")],
     allow_credentials=True,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
