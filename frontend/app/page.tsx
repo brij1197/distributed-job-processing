@@ -96,6 +96,11 @@ export default function Dashboard() {
                 <span className="text-sm font-medium capitalize">
                   {job.type}
                 </span>
+                {job.worker_stack && (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-800 text-gray-400 border border-gray-700 shrink-0">
+                    {job.worker_stack === "bullmq" ? "BullMQ" : "Celery"}
+                  </span>
+                )}
                 <span className="text-xs text-gray-500 truncate hidden sm:block">
                   {job.id}
                 </span>

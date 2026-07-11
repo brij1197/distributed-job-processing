@@ -2,9 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { submitJob, uploadFile, type JobType } from "@/lib/api";
+import { submitJob, uploadFile, type JobType, type Backend } from "@/lib/api";
 
 const FILE_TYPES: JobType[] = ["resize", "convert"];
+
+// Node is scoped to scrape-only; Python runs all job types.
+const BACKEND_TYPES: Record<Backend, JobType[]> = {
+  python: ["scrape", "resize", "convert"],
+  node: ["scrape"],
+};
 
 const EXAMPLE_PAYLOADS: Record<JobType, Record<string, unknown>> = {
   scrape: { url: "https://example.com" },
@@ -14,6 +20,7 @@ const EXAMPLE_PAYLOADS: Record<JobType, Record<string, unknown>> = {
 
 export default function SubmitPage() {
   const router = useRouter();
+  const [backend, setBackend] = useState<Backend>("python");
   const [type, setType] = useState<JobType>("scrape");
   const [payload, setPayload] = useState(
     JSON.stringify(EXAMPLE_PAYLOADS["scrape"], null, 2),
@@ -23,6 +30,15 @@ export default function SubmitPage() {
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadedPath, setUploadedPath] = useState("");
+
+  const availableTypes = BACKEND_TYPES[backend];
+
+  function handleBackendChange(newBackend: Backend) {
+    setBackend(newBackend);
+    if (!BACKEND_TYPES[newBackend].includes(type)) {
+      handleTypeChange("scrape");
+    }
+  }
 
   function handleTypeChange(newType: JobType) {
     setType(newType);
@@ -36,7 +52,7 @@ export default function SubmitPage() {
     setUploading(true);
     setError("");
     try {
-      const { path } = await uploadFile(file);
+      const { path } = await uploadFile(file, backend);
       setUploadedPath(path);
       const base = EXAMPLE_PAYLOADS[type];
       const updated =
@@ -61,8 +77,8 @@ export default function SubmitPage() {
     }
     setSubmitting(true);
     try {
-      const job = await submitJob(type, parsed, maxRetries);
-      router.push(`/jobs/${job.id}`);
+      const job = await submitJob(type, parsed, maxRetries, backend);
+      router.push(`/jobs/${job.id}?backend=${backend}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Submission Failed");
       setSubmitting(false);
@@ -74,18 +90,43 @@ export default function SubmitPage() {
       <h2 className="text-2xl font-bold mb-6">Submit a Job</h2>
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="block text-sm text-gray-400 mb-2">Job Type</label>
-          <div className="grid grid-cols-3 gap-2">
-            {(["scrape", "resize", "convert"] as JobType[]).map((t) => (
+          <label className="block text-sm text-gray-400 mb-2">Backend</label>
+          <div className="grid grid-cols-2 gap-2">
+            {(["python", "node"] as Backend[]).map((b) => (
               <button
-                key={t}
+                key={b}
                 type="button"
-                onClick={() => handleTypeChange(t)}
-                className={`py-2 rounded-lg text-sm capitalize font-medium transition-colors ${type === t ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-400 hover:text-white"} `}
+                onClick={() => handleBackendChange(b)}
+                className={`py-2 rounded-lg text-sm font-medium transition-colors ${backend === b ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-400 hover:text-white"} `}
               >
-                {t}
+                {b === "python" ? "Python (Celery)" : "Node (BullMQ)"}
               </button>
             ))}
+          </div>
+          {backend === "node" && (
+            <p className="text-xs text-gray-500 mt-1.5">
+              Node backend handles scrape jobs only.
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm text-gray-400 mb-2">Job Type</label>
+          <div className="grid grid-cols-3 gap-2">
+            {(["scrape", "resize", "convert"] as JobType[]).map((t) => {
+              const disabled = !availableTypes.includes(t);
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => handleTypeChange(t)}
+                  className={`py-2 rounded-lg text-sm capitalize font-medium transition-colors ${type === t ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-400 hover:text-white"} disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-gray-400`}
+                >
+                  {t}
+                </button>
+              );
+            })}
           </div>
         </div>
 
