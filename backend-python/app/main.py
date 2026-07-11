@@ -23,8 +23,9 @@ app.add_middleware(
 
 app.include_router(jobs.router, prefix="/jobs", tags=["jobs"])
 
-os.makedirs("/uploads", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="/uploads"), name="uploads")
+UPLOAD_DIR = os.environ.get("UPLOAD_DIR", "/uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
 @app.get("/health")
