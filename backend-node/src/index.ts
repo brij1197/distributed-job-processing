@@ -13,7 +13,9 @@ fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 const upload = multer({ dest: UPLOAD_DIR });
 
-app.use(cors({ origin: "https://reimagined-parakeet-vgvw566vq5xhp4xw-3000.app.github.dev" }));
+app.use(
+  cors({ origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000" }),
+);
 app.use(express.json());
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
