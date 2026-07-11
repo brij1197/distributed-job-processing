@@ -67,12 +67,16 @@ services:
 
   #Frontend (Next.js)
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_PYTHON_API: https://reimagined-parakeet-vgvw566vq5xhp4xw-8000.app.github.dev
+        NEXT_PUBLIC_NODE_API: https://reimagined-parakeet-vgvw566vq5xhp4xw-3001.app.github.dev
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_PYTHON_API: http://localhost:8000
-      NEXT_PUBLIC_NODE_API: http://localhost:3001
+      NEXT_PUBLIC_PYTHON_API: https://reimagined-parakeet-vgvw566vq5xhp4xw-8000.app.github.dev
+      NEXT_PUBLIC_NODE_API: https://reimagined-parakeet-vgvw566vq5xhp4xw-3001.app.github.dev
     depends_on:
       - api-python
       - api-node

@@ -1,8 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { getJob, deleteJob, type Job, type JobStatus } from "@/lib/api";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import {
+  getJob,
+  deleteJob,
+  backendForJob,
+  type Job,
+  type JobStatus,
+  type Backend,
+} from "@/lib/api";
 
 const STATUS_COLORS: Record<JobStatus, string> = {
   pending: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
@@ -12,11 +19,21 @@ const STATUS_COLORS: Record<JobStatus, string> = {
   failed: "bg-red-500/20 text-red-300 border-red-500/30",
 };
 
+const STACK_LABELS: Record<"celery" | "bullmq", string> = {
+  celery: "Python · Celery",
+  bullmq: "Node · BullMQ",
+};
+
 const TERMINAL_STATUSES: JobStatus[] = ["success", "failed"];
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const hint: Backend =
+    searchParams.get("backend") === "node" ? "node" : "python";
+
   const [job, setJob] = useState<Job | null>(null);
   const [error, setError] = useState("");
 
@@ -25,7 +42,7 @@ export default function JobDetailPage() {
 
     async function poll() {
       try {
-        const data = await getJob(id);
+        const data = await getJob(id, hint);
         setJob(data);
         if (TERMINAL_STATUSES.includes(data.status)) {
           clearInterval(interval);
@@ -38,10 +55,11 @@ export default function JobDetailPage() {
     poll();
     interval = setInterval(poll, 2000);
     return () => clearInterval(interval);
-  }, [id]);
+  }, [id, hint]);
 
   async function handleDelete() {
-    await deleteJob(id);
+    const backend = job ? backendForJob(job, hint) : hint;
+    await deleteJob(id, backend);
     router.push("/");
   }
 
@@ -59,6 +77,12 @@ export default function JobDetailPage() {
         ? "Running..."
         : "-";
 
+  const downloadBackend = backendForJob(job, hint);
+  const downloadBase =
+    downloadBackend === "node"
+      ? process.env.NEXT_PUBLIC_NODE_API
+      : process.env.NEXT_PUBLIC_PYTHON_API;
+
   return (
     <div className="max-w-2xl">
       <div className="flex items-center justify-between mb-6">
@@ -75,6 +99,11 @@ export default function JobDetailPage() {
           >
             {job.status}
           </span>
+          {job.worker_stack && (
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-800 text-gray-300 border border-gray-700">
+              {STACK_LABELS[job.worker_stack]}
+            </span>
+          )}
         </div>
         <button
           onClick={handleDelete}
@@ -117,7 +146,7 @@ export default function JobDetailPage() {
               | undefined;
             return outPath ? (
               <a
-                href={`${process.env.NEXT_PUBLIC_PYTHON_API}/uploads/${outPath.split("/").pop()}`}
+                href={`${downloadBase}/uploads/${outPath.split("/").pop()}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-block mt-3 text-xs text-blue-400 hover:text-blue-300 underline"
