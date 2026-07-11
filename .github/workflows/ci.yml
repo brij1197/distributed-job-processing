@@ -8,11 +8,27 @@ on:
 
 jobs:
     python:
-        name: Python backend (build)
+        name: Python backend (test)
         runs-on: ubuntu-latest
         defaults:
             run:
                 working-directory: backend-python
+
+        services:
+            postgres:
+                image: postgres:16-alpine
+                env:
+                    POSTGRES_USER: jobuser
+                    POSTGRES_PASSWORD: jobpassword
+                    POSTGRES_DB: jobsdb
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd "pg_isready -U jobuser -d jobsdb"
+                    --health-interval 5s
+                    --health-timeout 5s
+                    --health-retries 10
+
         steps:
             - uses: actions/checkout@v4
 
@@ -23,11 +39,17 @@ jobs:
                   cache-dependency-path: backend-python/requirements.txt
 
             - name: Install dependencies
-              run: pip install -r requirements.txt
+              run: pip install -r requirements.txt -r requirements-dev.txt
 
             - name: Import check
               run: |
                   python -c "import app.tasks, app.celery_app, app.schemas, app.models; print('python backend imports OK')"
+
+            - name: Run tests
+              env:
+                  TEST_DATABASE_URL: postgresql://jobuser:jobpassword@localhost:5432/jobsdb
+                  DATABASE_URL: postgresql://jobuser:jobpassword@localhost:5432/jobsdb
+              run: pytest tests/ -v
 
     node:
         name: Node backend (build)
